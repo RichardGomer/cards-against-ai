@@ -73,5 +73,34 @@ async function generateCompletion(model, prompt) {
     return output;
 }
 
+/**
+ * Tries to find JSON in the response from the Ollama API and parses it
+ * @param {*} model 
+ * @param {*} prompt 
+ * @returns 
+ */
+async function generateCompletionJson(model, prompt) {
+    let response = await generateCompletion(model, prompt);
+    
+    // Find that last json object in the response
+    const lastJsonStart = response.lastIndexOf('{');
+    const lastJsonEnd = response.lastIndexOf('}');
+
+    if (lastJsonStart === -1 || lastJsonEnd === -1 || lastJsonEnd < lastJsonStart) {
+        console.error('Missing or incomplete JSON structure in response:', response);
+        return null; // Handle invalid response gracefully
+    }
+
+    let json = response.slice(lastJsonStart).slice(0, lastJsonEnd - lastJsonStart + 1); // Extract the last JSON object
+    let result = JSON.parse(json);
+
+    if (typeof result !== 'object' || !result) {
+        console.error('Couldn\'t parse JSON response from Ollama:', response, json);
+        return null; // Handle invalid response gracefully
+    }
+
+    return result;
+}
+
 // Export functions for use elsewhere
-export { getModels, generateCompletion };
+export { getModels, generateCompletion, generateCompletionJson };

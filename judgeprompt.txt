@@ -1,0 +1,19 @@
+You are playing a game of cards against humanity. In this round, you are the judge.
+
+A prompt has been given: "{prompt}"
+
+Players have submitted some possible answers:
+{submissions}
+
+Consider how FUNNY each of the possible answers is.  Choose the one that you think is funniest.  The funniest answer is usually not the most obvious!
+
+Give a short comment on each card - does it make you laugh? is the scenario it suggests funny? what is the implication of the card? 
+does it imply something about the characters involved?!
+
+It is OK for answers to be offensive! They are often the funniest!
+
+Return your response in JSON, as an object with three fields: 
+thoughts - a piece of text with your thoughts about each card;
+winner - containing the text of the card that you chose as the winner; 
+and quip - a short quip that captures why you found it funny and that will make others laugh.
+

@@ -2,13 +2,14 @@
 
 import Deck from './deck.js';
 import Vorpal from 'vorpal'; // Import vorpal for CLI interaction
-import {generateCompletion} from './ollamaclient.js'; // Import ollama for AI interaction
+import {generateCompletionJson} from './ollamaclient.js'; // Import ollama for AI interaction
 import fs from 'fs';
 import { whiteCards, blackCards } from './cah.js';
 import { exit } from 'process';
 
 const vorpal = Vorpal();
 
+let bestmodel = 'qwen3:8b'; // Default to this model, if possible
 let model = null;
 
 let mydeck = null;
@@ -38,13 +39,19 @@ let models;
 try {
     const { getModels } = await import('./ollamaclient.js');
     models = await getModels();
+    if(models.indexOf(bestmodel) !== -1)
+        model = bestmodel; // Use the best model if available
+    else
+        model = models[0]; // Default to the first model
+
+    console.log('Using model:', model);
+
 } catch (err) {
     this.log('Failed to retrieve models:', err.message || err);
     exit(1);
 }
 
-model = models[0]; // Default to the first model
-vorpal.log('Using model:', model);
+
 
 
 init();
@@ -54,36 +61,19 @@ function pick_card(cards, challenge) {
     // We load the prompt each time so that we can tweak it during the game
     const basepromptPath = 'baseprompt.txt';
     let baseprompt = fs.readFileSync(basepromptPath, 'utf8');
-    
     let prompt = baseprompt.replace('{challenge}', challenge);
-
     const clist = cards.map((card, idx) => `${idx + 1}. ${card}`).join('\n');
-
     prompt = prompt.replace('{cards}', clist);
 
     // Use the ollama client to generate a completion based on the challenge
-    return generateCompletion(model, prompt)
+    return generateCompletionJson(model, prompt)
         .then(response => {
             console.log("Ran with model:", model);
-            //console.log('Response:', response);
+            console.log('Response JSON:', response, typeof response);
 
-            // Find that last json object in the response
-            const lastJsonStart = response.lastIndexOf('{');
-            const lastJsonEnd = response.lastIndexOf('}');
-
-            if (lastJsonStart === -1 || lastJsonEnd === -1 || lastJsonEnd < lastJsonStart) {
-                console.error('Missing or incomplete JSON structure in response:', response);
-                return null; // Handle invalid response gracefully
-            }
-
-            response = response.slice(lastJsonStart).slice(0, lastJsonEnd + 1); // Extract the last JSON object
-            
-            console.log('Response JSON:', response);
-
-            response = JSON.parse(response);
             // Check if the response is valid and contains a card
-            if (typeof response !== 'object' || !response || !response.card) {
-                console.error('Invalid response from Ollama:', response);
+            if (!response.card) {
+                console.error('ollama did not pick a card', response);
                 return null; // Handle invalid response gracefully
             }
 
@@ -94,6 +84,42 @@ function pick_card(cards, challenge) {
             return null; // Handle error gracefully
         });
 }
+
+function judge(submissions, blackCard) {
+    // We load the prompt each time so that we can tweak it during the game
+    const basepromptPath = 'judgeprompt.txt';
+    let baseprompt = fs.readFileSync(basepromptPath, 'utf8');
+    let prompt = baseprompt.replace('{prompt}', blackCard);  
+    const clist = submissions.map((card, idx) => `${idx + 1}. ${card}`).join('\n');
+    prompt = prompt.replace('{submissions}', clist);
+
+    console.log("Prompt for judging:", prompt);
+    
+    // Use the ollama client to generate a completion based on the challenge
+    return generateCompletionJson(model, prompt)
+        .then(response => {
+            console.log("Ran with model:", model);            
+            console.log('Response JSON:', response);
+
+            // Check if the response is valid and contains a card
+            if (!response.winner) {
+                console.error('ollama did not pick a winner', response);
+                return null; // Handle invalid response gracefully
+            }
+
+            if(!response.quip) {
+                response.quip = ""; // Default quip if not provided
+            }
+
+            return response; // Return the winning submission
+        })
+        .catch(error => {
+            console.error('Error judging submissions:', error);
+            return null; // Handle error gracefully
+        });
+}
+
+
 
 vorpal
     .command('models', 'Lists available models and lets you select one.')
@@ -228,6 +254,48 @@ vorpal
         
         callback();
     });
+
+    vorpal
+        .command('judge <blackCard>', 'Judge submissions for a black card. Enter each submission line by line, type "done" to finish.')
+        .action(async function(args, callback) {
+            const submissions = [];
+            const promptForSubmission = () => {
+                this.prompt({
+                    type: 'input',
+                    name: 'submission',
+                    message: 'Enter submission (or "done" to finish):'
+                }, async result => {
+
+                    console.log("Received submission:", result);
+
+                    let card = result.submission;
+
+                    if(card.trim() == "") {
+                        promptForSubmission();
+                    } else if (card.trim().toLowerCase() === 'done') {
+                        this.log('Submissions collected:', submissions);
+                        this.log("Waiting for AI to judge...");
+
+                        var stopSpinner = spinner(vorpal);
+
+                        let { winner, quip } = await judge(submissions, args.blackCard);
+
+                        stopSpinner(); // Stop the spinner
+
+                        console.log(`The winner is... \"${winner}\"`);
+                        console.log(`\" ${quip} \"`);
+
+                        //callback();
+                        vorpal.show(); // Show the prompt again
+                    } else {
+                        submissions.push(card);
+                        promptForSubmission();
+                    }
+                });
+            };
+            this.log(`Judging for black card: "${args.blackCard}"`);
+            promptForSubmission();
+        });
 
 vorpal
     .command('list', 'Lists all cards in the hand.')

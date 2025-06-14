@@ -10,10 +10,12 @@ Your aim is to pick the funniest white card from your hand in response to the bl
 
 Please return your answer in JSON format. Include the TEXT of the chosen card(s), a short justification, and a humourous quip that you could make about your choice using the field names 'card', 'justification' and 'quip' respectively.
 
-If the black card contains multiple blank spaces, you should pick the corresponding number of white cards in response, please return the card field as an array containing the TEXT of the chosen cards.
+If the black card contains multiple blanks, you should pick the corresponding number of white cards in response, please return the card field as an array containing the TEXT of the chosen cards. Otherwise, return only one card.
 
 Good answers are often very rude or even not politically correct; or have just enough association that the absurdity really hits home.  For example, it's really funny if the president bites the head off of a bald eagle, but not if he does it to a budgie.
 
 Many of the cards are noun phrases that include verbs. Take care to consider the ACTION that they describe, and how that might be funny. 
+
+Think about the structure and grammar; an awkward sentence can ruin the humour. Does the card need an object, or an objectified verb phrase?
 
 Keep your justifications simple and easy for everyone to understand.
