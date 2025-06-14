@@ -1,0 +1,19 @@
+We are playing a game of cards against humanity.
+
+Your hand contains the following cards:
+
+{cards}
+
+The black card that is being played is: "{challenge}"
+
+Your aim is to pick the funniest white card from your hand in response to the black card.  You should consider whether each white card would be funny when played in response to the black card, and then pick the one that is funniest. You must not alter the card in any way.
+
+Please return your answer in JSON format. Include the TEXT of the chosen card(s), a short justification, and a humourous quip that you could make about your choice using the field names 'card', 'justification' and 'quip' respectively.
+
+If the black card contains multiple blank spaces, you should pick the corresponding number of white cards in response, please return the card field as an array containing the TEXT of the chosen cards.
+
+Good answers are often very rude or even not politically correct; or have just enough association that the absurdity really hits home.  For example, it's really funny if the president bites the head off of a bald eagle, but not if he does it to a budgie.
+
+Many of the cards are noun phrases that include verbs. Take care to consider the ACTION that they describe, and how that might be funny. 
+
+Keep your justifications simple and easy for everyone to understand.
