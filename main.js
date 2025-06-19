@@ -172,6 +172,34 @@ vorpal
         callback();
     });
 
+    vorpal
+        .command('rm', 'Removes a card from the hand by number.')
+        .action(function(args, callback) {
+            if (!mydeck || mydeck.cards.length === 0) {
+                this.log('No cards in hand.');
+                callback();
+                return;
+            }
+            this.log('Cards in hand:');
+            mydeck.cards.forEach((card, idx) => {
+                this.log(`${idx + 1}: ${card}`);
+            });
+            this.prompt({
+                type: 'input',
+                name: 'number',
+                message: 'Enter the number of the card to remove:',
+                validate: input => {
+                    const idx = parseInt(input, 10);
+                    return idx >= 1 && idx <= mydeck.cards.length ? true : 'Invalid selection';
+                }
+            }, result => {
+                const idx = parseInt(result.number, 10) - 1;
+                const removed = mydeck.cards.splice(idx, 1);
+                this.log(`Removed card: "${removed[0]}"`);
+                callback();
+            });
+        });
+
 vorpal
     .command('deal', 'Replaces the hand with 10 random cards from the white collection.')
     .action(function(args, callback) {
