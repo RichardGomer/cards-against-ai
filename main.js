@@ -23,8 +23,10 @@ function spinner(vorpal) {
     const spinnerChars = ['|', '/', '-', '\\'];
     let currentChar = 0;
 
+    let start = new Date();
     const interval = setInterval(() => {
-        vorpal.ui.redraw(spinnerChars[currentChar]);
+        let elapsed = new Date() - start;
+        vorpal.ui.redraw(spinnerChars[currentChar] + " " + Math.floor(elapsed/1000));
         currentChar = (currentChar + 1) % spinnerChars.length;
     }, 100);
 
